@@ -204,7 +204,7 @@ s32 load_system_app(u32 *sa1_entry_out) {
             remaining = 0;
         }
 
-        ret = load_page((sa1_start * PAGES_PER_BLOCK) + j, aes_continuation, &dram_addr, length, FALSE);
+        ret = load_page((sa1_start * PAGES_PER_BLOCK) + page, aes_continuation, &dram_addr, length, FALSE);
         if (ret) {
             return 1;
         }
@@ -214,7 +214,7 @@ s32 load_system_app(u32 *sa1_entry_out) {
             sa1_start = block_link(IO_READ(PI_10400_REG));
         }
 
-        dram_addr += BYTES_PER_PAGE;
+        dram_addr += length;
     }
 
     set_proc_permissions(cmd);
