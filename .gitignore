@@ -1,0 +1,17 @@
+.vscode/
+
+build/
+lib/*.a
+
+*.bin
+
+*.exe
+*.dll
+*.bak
+*.rec
+*.z64
+*.sys
+*.txt
+!lib/*.txt
+
+sk.s

@@ -1,0 +1,43 @@
+OUTPUT_ARCH(mips)
+ENTRY(entrypoint)
+
+MEMORY {
+    sram (rwx) : ORIGIN = 0x9FC00000, LENGTH = 0x20000
+    skram (rw) : ORIGIN = 0x9FC40000, LENGTH = 0x8000
+    flash (r) : ORIGIN = 0, LENGTH = 0x10000
+}
+
+SECTIONS {
+    .text : {
+        PROVIDE(entrypoint = .);
+
+        KEEP(build/src/entry.o(.text*));
+        *(.text*)
+    } > sram AT > flash
+
+    .rodata : {
+        *(.rodata*)
+    } > sram AT > flash
+
+    .data : {
+        *(.data*)
+    } > sram AT > flash
+
+    .skram (NOLOAD) : {
+        *(.skram*)
+    } > skram
+
+    .bss (NOLOAD) : {
+        __bss_start = .;
+
+        *(.bss*)
+
+        __bss_end = .;
+    } > sram
+
+    _gp = __bss_start + 0x8000 - 0x10;
+
+    /DISCARD/ : {
+        *(*);
+    }
+}

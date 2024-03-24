@@ -1,0 +1,3 @@
+Required libraries from iQue Player SDK v1.5:
+    - libcrypto.a
+    - libgcc.a
