@@ -13,11 +13,17 @@ typedef enum {
 
 void set_proc_permissions(BbContentMetaDataHead *);
 
+s32 SHAnanigans(u32 *, u32);
+
+s32 gen_random_words(u32 *, u32);
+
+void ecc_sign(u8 *, u32, u32 *, BbEccSig *, u32);
+
 s32 dma_from_pibuf(void *, s32, s32);
 
 void aes_cbc_set_key_iv(BbAesKey *, BbAesIv *);
 
-void AES_Run(s32, s32);
+void AES_Run(s32);
 
 s32 card_read_page(u32);
 
@@ -28,8 +34,8 @@ size_t strlen(const char *);
 int strcmp(const char *, const char *);
 int strncmp(const char *, const char *, int);
 const char *strstr(const char *, const char *);
-void *memcpy(void *, void *, size_t);
-void *wordcopy(void *, void *, s32);
+void *memcpy(void *, const void *, size_t);
+void *wordcopy(void *, const void *, s32);
 void *memset(void *, int, size_t);
 void memclear(void *, size_t);
 int memcmp(const void *, const void *, size_t);

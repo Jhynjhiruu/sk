@@ -5,6 +5,7 @@
 #include "blocks.h"
 #include "cache.h"
 #include "misc.h"
+#include "virage.h"
 
 #define THROW_EXCEPTION() ((void (*)())PHYS_TO_K1(R_VEC + 0x200 + E_VEC))()
 
@@ -18,6 +19,8 @@ u8 cmd_buf[BYTES_PER_BLOCK] __attribute__((section(".skram")));
 
 #define N64_ROM_HEADER_SIZE (0x1000)
 #define N64_ROM_HEADER_LOADADDR_OFFSET (8)
+
+typedef void (*SA1Entry)(u32);
 
 void dram_init(void) {
     IO_READ(PI_MISC_REG);
@@ -123,7 +126,7 @@ s32 load_sa_ticket(u16 *sa_start_block, u16 start_block) {
     return ret;
 }
 
-s32 load_page(u32 block, s32 continuation, u32 *dram_addr_out, u32 length, s32 first) {
+s32 load_page(u32 block, s32 continuation, SA1Entry *dram_addr_out, u32 length, s32 first) {
     s32 ret;
 
     ret = card_read_page(block);
@@ -131,20 +134,20 @@ s32 load_page(u32 block, s32 continuation, u32 *dram_addr_out, u32 length, s32 f
         return 1;
     }
 
-    AES_Run(0, continuation);
+    AES_Run(continuation);
 
     while (IO_READ(PI_AES_STATUS_REG) & PI_AES_BUSY)
         ;
 
     if (first) {
-        u32 *temp = (u32 *)PHYS_TO_K1(PI_10000_BUF(8));
+        SA1Entry *temp = (SA1Entry *)PHYS_TO_K1(PI_10000_BUF(8));
 
-        *dram_addr_out = (u32)KDM_TO_PHYS(*temp);
+        *dram_addr_out = (SA1Entry)KDM_TO_PHYS(*temp);
     }
 
     osInvalDCache((void *)PHYS_TO_K0(*dram_addr_out), BYTES_PER_PAGE);
 
-    ret = dma_from_pibuf((void *)*dram_addr_out, length, OS_READ);
+    ret = dma_from_pibuf(*dram_addr_out, length, OS_READ);
     if (ret) {
         return 1;
     }
@@ -152,7 +155,7 @@ s32 load_page(u32 block, s32 continuation, u32 *dram_addr_out, u32 length, s32 f
     return 0;
 }
 
-s32 load_system_app(u32 *sa1_entry_out) {
+s32 load_system_app(SA1Entry *sa1_entry_out) {
     s32 ret;
 
     BbContentMetaDataHead *cmd;
@@ -161,7 +164,7 @@ s32 load_system_app(u32 *sa1_entry_out) {
     BbAesKey sa1_key;
     s32 aes_continuation = FALSE;
     u32 length = BYTES_PER_PAGE;
-    u32 dram_addr;
+    SA1Entry dram_addr;
     u32 remaining;
 
     u32 page;
@@ -189,7 +192,7 @@ s32 load_system_app(u32 *sa1_entry_out) {
         aes_continuation = TRUE;
 
         if (page == 0) {
-            *sa1_entry_out = *(u32 *)PHYS_TO_K0(dram_addr + N64_ROM_HEADER_LOADADDR_OFFSET);
+            *sa1_entry_out = *(SA1Entry *)PHYS_TO_K0(dram_addr + N64_ROM_HEADER_LOADADDR_OFFSET);
         }
     }
 
@@ -222,8 +225,8 @@ s32 load_system_app(u32 *sa1_entry_out) {
     return 0;
 }
 
-u32 setup_system(void) {
-    u32 sa1_entry;
+SA1Entry setup_system(void) {
+    SA1Entry sa1_entry;
 
     IO_WRITE(PI_MISC_REG, 0x31);
     IO_WRITE(MI_3C_REG, 0x01000000);

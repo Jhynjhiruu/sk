@@ -3,6 +3,8 @@
 
 #include <bbtypes.h>
 
+extern BbVirage2 *virage2_offset;
+
 void initialise_virage_controllers(void);
 
 s32 write_virage_data(u32 controller, u32 *data, u32 size);

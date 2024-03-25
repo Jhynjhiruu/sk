@@ -2,6 +2,8 @@
 
 #include "virage.h"
 
+BbVirage2 *virage2_offset = (BbVirage2 *)PHYS_TO_K1(VIRAGE2_BASE_ADDR);
+
 void delay(u32 count) {
     for (u32 i = 0; i < count; i++) {
         __asm__ volatile("nop");

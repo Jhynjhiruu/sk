@@ -1,11 +1,12 @@
 #include <bcp.h>
 #include <libcrypto/aes.h>
+#include <libcrypto/bsl.h>
+#include <libcrypto/sha1.h>
 #include <macros.h>
 
 #include "misc.h"
+#include "rand.h"
 #include "virage.h"
-
-BbVirage2 *virage2_offset = (BbVirage2 *)PHYS_TO_K1(VIRAGE2_BASE_ADDR);
 
 Virage01Selector sel = NONE;
 
@@ -39,6 +40,78 @@ void set_proc_permissions(BbContentMetaDataHead *cmdHead) {
     // all processes are allowed all SKCs
 }
 
+s32 SHAnanigans(u32 *random_out, u32 num_words) {
+    SHA1Context sha1ctx;
+    u8 random_bytes[0x200];
+    u8 sp270[125][0x14];
+    union {
+        u32 words[5];
+        u8 bytes[0x14];
+    } spC38;
+    u8 random_byte;
+
+    if (num_words > 8) {
+        return 1;
+    }
+
+    do {
+        for (u32 i = 0; i < 125; i++) {
+            for (u32 j = 0; j < 0x200; j++) {
+                random_byte = 0;
+                for (u32 k = 0; k < 8; k++) {
+                    random_byte += ((IO_READ(MI_RANDOM_BIT) & 1) << k);
+                }
+                random_bytes[j] = random_byte;
+            }
+            SHA1Reset(&sha1ctx);
+            SHA1Input(&sha1ctx, random_bytes, ARRAY_COUNT(random_bytes));
+            SHA1Result(&sha1ctx, spC38.bytes);
+            memcpy(&sp270[i], spC38.bytes, 0x14);
+        }
+    } while (do_randomness((u8 *)sp270, 0x9C4) == -1);
+    SHA1Reset(&sha1ctx);
+    SHA1Input(&sha1ctx, (u8 *)sp270, sp270[0][0] + 1);
+    SHA1Input(&sha1ctx, (u8 *)virage2_offset->appStateKey, 0x10);
+    SHA1Input(&sha1ctx, (u8 *)virage2_offset->selfMsgKey, 0x10);
+    SHA1Result(&sha1ctx, spC38.bytes);
+
+    if (num_words > 4) {
+        wordcopy(random_out, spC38.words, 4);
+        SHA1Reset(&sha1ctx);
+        SHA1Input(&sha1ctx, (u8 *)sp270, sp270[0][1] + 1);
+        SHA1Result(&sha1ctx, spC38.bytes);
+        wordcopy(&random_out[4], spC38.words, num_words - 4);
+    } else {
+        wordcopy(random_out, spC38.words, num_words);
+    }
+    return 0;
+}
+
+s32 gen_random_words(u32 *random_out, u32 num_words) {
+    u32 num_chunks = num_words / 8;
+    u32 remainder = num_words % 8;
+
+    if (remainder > 0 && SHAnanigans(random_out, remainder) != 0) {
+        return 1;
+    }
+    random_out = &random_out[remainder];
+
+    for (u32 i = 0; i < num_chunks; i++) {
+        if (SHAnanigans(&random_out[i * 8], 8) != 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void ecc_sign(u8 *data, u32 datasize, u32 *private_key, BbEccSig *signature, u32 identity) {
+    u32 random_data[8];
+
+    do {
+        gen_random_words(random_data, ARRAY_COUNT(random_data));
+    } while (bsl_compute_ecc_sig(data, datasize, private_key, random_data, (u32 *)signature, identity) != BSL_OK);
+}
+
 s32 wait_pi_ready(void) {
     while (IO_READ(PI_STATUS_REG) & ((1 << 1) | (1 << 0))) {
         if ((IO_READ(PI_STATUS_REG) & (1 << 2))) {
@@ -70,10 +143,8 @@ void aes_cbc_set_key_iv(BbAesKey *key, BbAesIv *iv) {
     wordcopy((void *)PHYS_TO_K1(PI_AES_IV_BUF(0)), iv, ARRAY_COUNT(*iv));
 }
 
-void AES_Run(s32 bufSelect, s32 continuation) {
+void AES_Run(s32 continuation) {
     u32 ctrl = PI_AES_EXEC_CMD;
-
-    ctrl |= bufSelect << 14;
     if (continuation) {
         ctrl |= 1;
     } else {
@@ -168,7 +239,7 @@ const char *strstr(const char *str1, const char *str2) {
     return NULL;
 }
 
-void *memcpy(void *dst, void *src, size_t num) {
+void *memcpy(void *dst, const void *src, size_t num) {
     u8 *dstp = (u8 *)dst;
     u8 *srcp = (u8 *)src;
 
@@ -179,7 +250,7 @@ void *memcpy(void *dst, void *src, size_t num) {
     return dst;
 }
 
-void *wordcopy(void *dst, void *src, s32 nWords) {
+void *wordcopy(void *dst, const void *src, s32 nWords) {
     s32 *srcp = (s32 *)src;
     s32 *dstp = (s32 *)dst;
 
@@ -295,13 +366,15 @@ s32 set_virage01_selector(BbVirage01 *virage_data) {
     }
 
     if (v1_write_count < v0_write_count) {
-        // if the v1 write count is less than the v0 write count (or if v1 failed the checksum), use v0 data but use v1 for writes
+        // if the v1 write count is less than the v0 write count (or if v1 failed the checksum), use v0 data but use v1
+        // for writes
         if ((read_virage(VIRAGE0_STATUS_REG)) || (read_virage01(&v0_write_count, (void *)PHYS_TO_K1(VIRAGE0_BASE_ADDR), virage_data))) {
             return 1;
         }
         sel = V1;
     } else {
-        // if the v0 write count is less than the v1 write count (or if v0 failed the checksum), use v1 data but use v0 for writes
+        // if the v0 write count is less than the v1 write count (or if v0 failed the checksum), use v1 data but use v0
+        // for writes
         sel = V0;
     }
 

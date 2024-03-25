@@ -3,7 +3,7 @@ ELF := $(TARGET:.bin=.elf)
 
 DEBUG ?= 0
 
-PATCHED_SK ?= 1
+NO_RECRYPT ?= 1
 
 PYTHON ?= python3
 ELFPATCH := $(PYTHON) tools/elfpatch.py
@@ -33,23 +33,23 @@ O_FILES := $(foreach f,$(C_FILES:.c=.o),build/$f) \
 LIB_DIR := build/lib
 
 ifeq ($(DEBUG),1)
-	DEBUG_FLAG := -DDEBUG -DMON
+	DEBUG_FLAG := -DDEBUG
 else
-	DEBUG_FLAG := -DNODEBUG -DNOMON
+	DEBUG_FLAG := -DNODEBUG
 endif
 
-ifeq ($(PATCHED_SK),1)
-	PATCHED_SK_FLAG := -DPATCHED_SK
+ifeq ($(NO_RECRYPT),1)
+	NO_RECRYPT_FLAG := -DNO_RECRYPT
 else
-	PATCHED_SK_FLAG :=
+	NO_RECRYPT_FLAG :=
 endif
 
 INC := -I include -I include/PR -I include/sys -I src
 LIBDIRS := -L $(LIB_DIR)
 LIB := -lgcc -lcrypto
 LIBS := $(LIB_DIR)/libgcc.a $(LIB_DIR)/libcrypto.a
-CFLAGS := $(INC) -D_MIPS_SZLONG=32 -D_LANGUAGE_C -DBBPLAYER $(DEBUG_FLAG) $(PATCHED_SK_FLAG) -nostdinc -fno-builtin -fno-PIC -mno-abicalls -G 0 -mabi=32 -mgp32 -Wall -Wa,-Iinclude -march=vr4300 -mtune=vr4300 -ffunction-sections -fdata-sections -g -ffile-prefix-map="$(CURDIR)"= -Os -Wall -Werror -Wno-error=deprecated-declarations -fdiagnostics-color=always -mips3
-ASFLAGS := $(INC) -D_MIPS_SZLONG=32 -D_LANGUAGE_ASSEMBLY -DBBPLAYER $(DEBUG_FLAG) $(PATCHED_SK_FLAG) -nostdinc -fno-PIC -mno-abicalls -G 0 -mabi=32 -march=vr4300 -mtune=vr4300 -Wa,-Iinclude -mips3
+CFLAGS := $(INC) -D_MIPS_SZLONG=32 -D_LANGUAGE_C -DBBPLAYER $(DEBUG_FLAG) $(NO_RECRYPT_FLAG) -nostdinc -fno-builtin -fno-PIC -mno-abicalls -G 0 -mabi=32 -mgp32 -Wall -Wa,-Iinclude -march=vr4300 -mtune=vr4300 -ffunction-sections -fdata-sections -g -ffile-prefix-map="$(CURDIR)"= -Os -Wall -Werror -Wno-error=deprecated-declarations -fdiagnostics-color=always -mips3
+ASFLAGS := $(INC) -D_MIPS_SZLONG=32 -D_LANGUAGE_ASSEMBLY -DBBPLAYER $(DEBUG_FLAG) $(NO_RECRYPT_FLAG) -nostdinc -fno-PIC -mno-abicalls -G 0 -mabi=32 -march=vr4300 -mtune=vr4300 -Wa,-Iinclude -mips3
 
 $(shell mkdir -p build $(foreach dir,$(SRC_DIRS) lib,build/$(dir)))
 

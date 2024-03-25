@@ -9,7 +9,7 @@ AllowShortLoopsOnASingleLine: 'false'
 PackConstructorInitializers: Never 
 BreakConstructorInitializers: AfterColon
 SpaceBeforeCtorInitializerColon: 'false'
-ColumnLimit: '240'
+ColumnLimit: '180'
 IndentWidth: '4'
 IndentCaseBlocks: 'true'
 IndentCaseLabels: 'true'

@@ -170,7 +170,7 @@ typedef enum { RSA_2048 = 0, RSA_4096 } RsaSize;
 typedef struct {
     /* 0x00 */ BbContentId contentId;
     /* 0x04 */ BbAesKey contentKey;
-    /* 0x14 */ u32 unk14;
+    /* 0x14 */ u32 state;
     /* 0x18 */ char unk18[8];
 } RecryptListEntry;
 
@@ -215,10 +215,5 @@ void launch_app_trampoline(void);
 
 extern const u32 rootRSAPublicKey[];
 extern const u32 rootRSAExponent;
-
-extern BbVirage2 *virage2_offset;
-extern u16 D_9FC0EBB0;
-extern s16 D_9FC0EBB2;
-extern u16 g_cur_proc_trial_type;
 
 #endif
