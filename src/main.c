@@ -5,6 +5,7 @@
 #include "blocks.h"
 #include "cache.h"
 #include "misc.h"
+#include "stack.h"
 #include "virage.h"
 
 #define THROW_EXCEPTION() ((void (*)())PHYS_TO_K1(R_VEC + 0x200 + E_VEC))()
@@ -13,6 +14,7 @@ u32 app_flags = 0;
 
 BbVirage01 v01;
 
+u8 sk_stack[STACK_SIZE] __attribute__((aligned(STACK_ALIGN), section(".skstack")));
 u8 cmd_buf[BYTES_PER_BLOCK] __attribute__((section(".skram")));
 
 #define SK_SIZE (4)
@@ -147,7 +149,7 @@ s32 load_page(u32 block, s32 continuation, SA1Entry *dram_addr_out, u32 length, 
 
     osInvalDCache((void *)PHYS_TO_K0(*dram_addr_out), BYTES_PER_PAGE);
 
-    ret = dma_from_pibuf(*dram_addr_out, length, OS_READ);
+    ret = pibuf_dma(*dram_addr_out, length, OS_READ);
     if (ret) {
         return 1;
     }

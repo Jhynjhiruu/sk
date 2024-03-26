@@ -84,6 +84,10 @@ s32 recrypt_list_get_key_for_cid(RecryptList *list, BbAesKey *key, BbContentId c
 
         recrypt_list_sign(list);
 
+#ifndef NO_RECRYPT
+        memcpy(key, entry.contentKey, sizeof(BbAesKey));
+#endif
+
         return 4;
     } else {
         // found

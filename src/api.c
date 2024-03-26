@@ -195,7 +195,7 @@ s32 recrypt_block(u8 *buf, u32 size, s32 is_recrypt) {
     u32 left;
 
     for (u32 i = 0; i < size; i += chunk_size) {
-        if (dma_from_pibuf((void *)K0_TO_PHYS((u32)buf), chunk_size, OS_WRITE)) {
+        if (pibuf_dma((void *)K0_TO_PHYS((u32)buf), chunk_size, OS_WRITE)) {
             return 1;
         }
 

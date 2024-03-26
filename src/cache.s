@@ -27,11 +27,11 @@ END(icache_reset)
 
 LEAF(dcache_reset)
     // invalidates the cache in the bootrom address space
-    la      t0, PHYS_TO_K0(0x1FC20000)
+    la      t0, __bootrom_start
     addiu   t1, t0, DCACHE_SIZE
     addiu   t1, t1, -DCACHE_LINESIZE
-    la      t5, 0x1FC00000
-    la      t6, 0x1FCB0000
+    la      t5, __boot_protected_start
+    la      t6, __boot_protected_end
 1:
     // load the tag of the cache line that the address in t0 uses into TagLo
     cache   (CACH_PD | C_ILT), (t0)
@@ -63,15 +63,15 @@ END(dcache_reset)
 
 LEAF(wipe_sk_stack)
     // clear the stack
-    la      t0, 0x9FC40000
-    la      t1, 0x9FC48000 - 0x138
+    la      t0, __skram_start
+    la      t1, __sk_stack_end_k0_adj
 1:
     sd      zero, (t0)
     addiu   t0, 8
     bltu    t0, t1, 1b
 
     // write back the cache
-    la      t0, 0x9FC40000
+    la      t0, __skram_start
     addiu   t1, t0, DCACHE_SIZE
 2:
     cache   (CACH_PD | C_IWBINV), (t0)

@@ -2,10 +2,14 @@ OUTPUT_ARCH(mips)
 ENTRY(entrypoint)
 
 MEMORY {
-    sram (rwx) : ORIGIN = 0x9FC00000, LENGTH = 0x20000
+    bram (rwx) : ORIGIN = 0x9FC00000, LENGTH = 0x10000
+    brom (rwx) : ORIGIN = 0x9FC20000, LENGTH = 0x2000
     skram (rw) : ORIGIN = 0x9FC40000, LENGTH = 0x8000
     flash (r) : ORIGIN = 0, LENGTH = 0x10000
 }
+
+#include "stack.h"
+#include "R4300.h"
 
 SECTIONS {
     .text : {
@@ -13,18 +17,32 @@ SECTIONS {
 
         KEEP(build/src/entry.o(.text*));
         *(.text*)
-    } > sram AT > flash
+    } > bram AT > flash
 
     .rodata : {
         *(.rodata*)
-    } > sram AT > flash
+    } > bram AT > flash
 
     .data : {
         *(.data*)
-    } > sram AT > flash
+    } > bram AT > flash
 
     .skram (NOLOAD) : {
+        __skram_start = .;
+
         *(.skram*)
+
+        __sk_stack_start = .;
+        *(.skstack*)
+        __sk_stack_end = .;
+
+        __skram_end = .;
+
+        __sk_stack_end_k0 = PHYS_TO_K0(ABSOLUTE(__sk_stack_end));
+        __sk_stack_end_k1 = PHYS_TO_K1(ABSOLUTE(__sk_stack_end));
+
+        __sk_stack_end_k0_adj = ABSOLUTE(__sk_stack_end_k0) - STACK_CONTEXT_SIZE;
+        __sk_stack_end_k1_adj = ABSOLUTE(__sk_stack_end_k1) - STACK_CONTEXT_SIZE;
     } > skram
 
     .bss (NOLOAD) : {
@@ -34,9 +52,14 @@ SECTIONS {
         *(COMMON)
 
         __bss_end = .;
-    } > sram
+    } > bram
 
     _gp = __bss_start + 0x8000 - 0x10;
+
+    __bootrom_start = PHYS_TO_K0(ABSOLUTE(ORIGIN(brom)));
+
+    __boot_protected_start = K0_TO_PHYS(ABSOLUTE(ORIGIN(bram)));
+    __boot_protected_end = __boot_protected_start + 0xB0000;
 
     /DISCARD/ : {
         *(*);

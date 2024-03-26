@@ -63,8 +63,7 @@ LEAF(startup)
 .set reorder
     
     // set up stack with a cached pointer
-    li      sp, PHYS_TO_K0(0x1FC48000)
-    addu    sp, -0x138
+    li      sp, __sk_stack_end_k0_adj
 
     // hardware init and load system app, runs cached
     // returns the entrypoint function pointer
@@ -85,8 +84,7 @@ LEAF(__skException)
     or      k0, K1BASE
     or      a0, K1BASE
 
-    li      sp, PHYS_TO_K0(0x1FC48000)
-    addu    sp, -0x138
+    li      sp, __sk_stack_end_k0_adj
     or      sp, K1BASE
 
     nop
@@ -144,8 +142,7 @@ LEAF(__handle_skc)
 .set noat
     // set up stack in uncached address space
     move    k0, sp
-    la      sp, PHYS_TO_K0(0x1FC48000)
-    addiu   sp, -0x138
+    la      sp, __sk_stack_end_k0_adj
     li      k1, K1BASE
     or      sp, k1
 
@@ -285,8 +282,7 @@ LEAF(__handle_timer_expiry)
 .set noat
     // set up stack
     move    k0, sp
-    li      sp, PHYS_TO_K1(0x1FC48000)
-    addu    sp, -0x138
+    li      sp, __sk_stack_end_k1_adj
 
     // save registers, unlike the SKC handler this saves a full set as the
     // timer interrupt could occur at any time
@@ -439,10 +435,9 @@ exit3:
 END(__handle_timer_expiry_2)
 
 LEAF(__handle_other)
-    # set up stack
+    // set up stack
     move    k0, sp
-    la      sp, PHYS_TO_K0(0x1FC48000)
-    addu    sp, -0x138
+    la      sp, __sk_stack_end_k0_adj
     li      k1, K1BASE
     or      sp, k1
 

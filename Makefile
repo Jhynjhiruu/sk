@@ -18,6 +18,8 @@ AS := $(CROSS)as
 LD := $(CROSS)ld
 AR := $(CROSS)ar
 
+CPP := $(CROSS)cpp
+
 RANLIB  := $(CROSS)ranlib
 OBJCOPY := $(CROSS)objcopy
 OBJDUMP := $(CROSS)objdump
@@ -76,8 +78,11 @@ $(LIB_DIR)/lib%.a: $(LIB_DIR)/lib%
 	$(AR) r $@ $(wildcard $</*.o)
 	$(RANLIB) $@
 
-$(ELF): $(C_FILES) $(S_FILES) $(LIBS) | $(O_FILES)
-	$(LD) -T sk.lcf -o $@ $| $(LIBDIRS) -Map $(@:.elf=.map) $(LIB) --no-warn-mismatch
+build/%.lcf: %.lcf
+	$(CPP) -o $@ $< $(INC) -P -undef -D_LANGUAGE_ASSEMBLY
+
+$(ELF): $(C_FILES) $(S_FILES) $(LIBS) build/sk.lcf | $(O_FILES)
+	$(LD) -T build/sk.lcf -o $@ $| $(LIBDIRS) -Map $(@:.elf=.map) $(LIB) --no-warn-mismatch
 
 build/src/%.o: src/%.s
 	$(CC) -x assembler-with-cpp $(ASFLAGS) -c $< -o $@

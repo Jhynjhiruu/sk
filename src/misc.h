@@ -19,7 +19,7 @@ s32 gen_random_words(u32 *, u32);
 
 void ecc_sign(u8 *, u32, u32 *, BbEccSig *, u32);
 
-s32 dma_from_pibuf(void *, s32, s32);
+s32 pibuf_dma(void *, s32, s32);
 
 void aes_cbc_set_key_iv(BbAesKey *, BbAesIv *);
 

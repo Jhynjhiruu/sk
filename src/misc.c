@@ -122,7 +122,7 @@ s32 wait_pi_ready(void) {
     return 0;
 }
 
-s32 dma_from_pibuf(void *outBuf, s32 length, s32 direction) {
+s32 pibuf_dma(void *outBuf, s32 length, s32 direction) {
     IO_WRITE(PI_DRAM_ADDR_REG, outBuf);
     IO_WRITE(PI_CART_ADDR_REG, 0);
 
